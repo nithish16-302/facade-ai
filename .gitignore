@@ -53,3 +53,4 @@ test_upload.js
 sample.jpg
 upload_hover.png
 upload_initial.png
+api/services/__pycache__/
