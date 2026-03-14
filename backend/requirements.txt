@@ -1,0 +1,12 @@
+anyio==4.12.1
+fastapi==0.135.1
+httpx==0.28.1
+numpy==2.4.3
+openai==2.28.0
+opencv-python==4.13.0.92
+pydantic==2.12.5
+pydantic_core==2.41.5
+python-dotenv==1.2.2
+python-multipart==0.0.22
+starlette==0.52.1
+uvicorn==0.41.0
