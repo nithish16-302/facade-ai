@@ -49,7 +49,7 @@ export default function Home() {
       formData.append('image', uploadFile);
       formData.append('palette_id', selectedPalette);
 
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
       const res = await fetch(`${API_URL}/api/v1/generate`, {
         method: "POST",
         body: formData,
