@@ -5,13 +5,16 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+NEGATIVE_PROMPT = (
+    "wrong colors, gray, faded, desaturated, washed out, blurry, artifacts, "
+    "distorted architecture, deformed structure, bad quality, low resolution, "
+    "painting, sketch, cartoon, unrealistic, CGI"
+)
+
 async def generate_sdxl_facade_async(base64_img_str: str, generation_prompt: str) -> str:
     """
-    Sends the original base64 image and the GPT-4o-mini generation prompt 
-    to Replicate's SDXL image-to-image API.
-    1. Uploads image to Replicate's /v1/files endpoint via multipart
-    2. Passes the hosted URL + generation prompt to SDXL
-    3. Polls until generation succeeds and returns the output image URL
+    Sends the original base64 image and the generation prompt to Replicate SDXL.
+    Uses Replicate's /v1/files endpoint to host the image, then passes the URL to SDXL.
     """
     
     token = os.environ.get("REPLICATE_API_TOKEN")
@@ -21,7 +24,6 @@ async def generate_sdxl_facade_async(base64_img_str: str, generation_prompt: str
 
     print("Initiating Replicate API Prediction...")
     try:
-        # 1. Decode base64 to raw bytes
         if "," in base64_img_str:
             base64_data = base64_img_str.split(",")[1]
         else:
@@ -32,7 +34,7 @@ async def generate_sdxl_facade_async(base64_img_str: str, generation_prompt: str
         
         auth_headers = {"Authorization": f"Bearer {token}"}
 
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        async with httpx.AsyncClient(timeout=180.0) as client:
             # Step 1: Upload image to Replicate's file hosting via multipart
             print("Uploading image to Replicate file hosting...")
             files = {"content": ("facade.jpg", image_bytes, "image/jpeg")}
@@ -43,25 +45,26 @@ async def generate_sdxl_facade_async(base64_img_str: str, generation_prompt: str
             )
             file_resp.raise_for_status()
             file_data = file_resp.json()
-            
-            # The hosted URL is at urls.get
             hosted_url = file_data["urls"]["get"]
             print(f"Image hosted at: {hosted_url}")
             
             # Step 2: Create SDXL image-to-image prediction
+            # Higher prompt_strength (0.80) and more steps for better color fidelity
             print("Sending prompt to Replicate SDXL...")
             payload = {
                 "version": "39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
                 "input": {
                     "image": hosted_url,
                     "prompt": generation_prompt,
-                    "prompt_strength": 0.60,
+                    "negative_prompt": NEGATIVE_PROMPT,
+                    "prompt_strength": 0.80,
                     "num_outputs": 1,
-                    "scheduler": "K_EULER",
-                    "num_inference_steps": 25,
-                    "guidance_scale": 7.5,
+                    "scheduler": "DPMSolverMultistep",
+                    "num_inference_steps": 40,
+                    "guidance_scale": 8.5,
                     "refine": "expert_ensemble_refiner",
-                    "high_noise_frac": 0.8
+                    "high_noise_frac": 0.85,
+                    "apply_watermark": False
                 }
             }
             

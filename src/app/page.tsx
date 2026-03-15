@@ -50,8 +50,16 @@ export default function Home() {
       const formData = new FormData();
       formData.append('image', uploadFile);
       if (useCustomColor) {
+        // Validate and normalize hex — auto-complete 5-char input to 6 chars
+        let hex = customHex.startsWith('#') ? customHex : `#${customHex}`;
+        if (hex.length === 4) hex = `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`; // #RGB → #RRGGBB
+        if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+          setAppState('idle');
+          alert(`Invalid hex color "${customHex}". Please use format #RRGGBB (e.g. #FF0000 for red).`);
+          return;
+        }
         formData.append('palette_id', 'custom');
-        formData.append('hex_color', customHex);
+        formData.append('hex_color', hex);
       } else {
         formData.append('palette_id', selectedPalette);
       }

@@ -65,11 +65,16 @@ async def analyze_facade_async(base64_image: str, palette_id: str, hex_color: st
     Your job is to analyze photos of buildings and generate precise masking instructions
     and generation prompts so a downstream image diffusion model can repaint the house without altering its structure.
     
-    The user has selected the following 'Modern 2026' palette:
+    The user has selected the following palette/color:
     {palette_details}
     
-    Analyze the image and fill out the required JSON fields. Be highly specific about 
-    architectural terms.
+    IMPORTANT RULES for the 'image_generation_prompt' field:
+    1. LEAD with the color/material instruction — the first 10 words are the most influential in diffusion models.
+    2. Be EXTREMELY specific about the target color (include hex codes and material names).
+    3. Use strong, vivid color language: "vibrant", "saturated", "bold", "richly painted".
+    4. Preserve the building's STRUCTURE entirely — only change surface colors and materials.
+    5. Always end with: "Architectural photography, 8K, photorealistic, sharp focus, natural daylight."
+    6. Never use vague terms like "modern" alone — always pair with specific material and color.
     """
 
     try:
