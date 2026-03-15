@@ -15,6 +15,8 @@ const PALETTES = [
 
 export default function Home() {
   const [selectedPalette, setSelectedPalette] = useState("nordic");
+  const [useCustomColor, setUseCustomColor] = useState(false);
+  const [customHex, setCustomHex] = useState("#E8C07D");
   const [isHovering, setIsHovering] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -47,7 +49,12 @@ export default function Home() {
     try {
       const formData = new FormData();
       formData.append('image', uploadFile);
-      formData.append('palette_id', selectedPalette);
+      if (useCustomColor) {
+        formData.append('palette_id', 'custom');
+        formData.append('hex_color', customHex);
+      } else {
+        formData.append('palette_id', selectedPalette);
+      }
 
       const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://facade-ai-umber.vercel.app";
       const res = await fetch(`${API_URL}/api/v1/generate`, {
@@ -125,8 +132,8 @@ export default function Home() {
                 {PALETTES.map(palette => (
                   <button 
                     key={palette.id}
-                    className={`palette-btn ${selectedPalette === palette.id ? 'selected' : ''}`}
-                    onClick={() => setSelectedPalette(palette.id)}
+                    className={`palette-btn ${!useCustomColor && selectedPalette === palette.id ? 'selected' : ''}`}
+                    onClick={() => { setSelectedPalette(palette.id); setUseCustomColor(false); }}
                   >
                     <div className="palette-swatch" style={{background: palette.gradient}}></div>
                     <div className="palette-info">
@@ -138,7 +145,51 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Action Button */}
+            {/* Custom Hex Color */}
+            <div>
+              <div className="section-label" style={{marginBottom: '0.75rem'}}>3. Custom Color</div>
+              <div
+                onClick={() => setUseCustomColor(true)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '12px', padding: '0.75rem 1rem',
+                  borderRadius: '12px', cursor: 'pointer',
+                  border: `2px solid ${useCustomColor ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}`,
+                  background: useCustomColor ? 'rgba(99,102,241,0.1)' : 'rgba(255,255,255,0.04)',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <div style={{position: 'relative', flexShrink: 0}}>
+                  <div style={{
+                    width: '36px', height: '36px', borderRadius: '8px',
+                    background: customHex, border: '2px solid rgba(255,255,255,0.2)'
+                  }} />
+                  <input
+                    type="color"
+                    value={customHex}
+                    onChange={(e) => { setCustomHex(e.target.value); setUseCustomColor(true); }}
+                    style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }}
+                  />
+                </div>
+                <div style={{flex: 1}}>
+                  <div style={{fontWeight: 600, fontSize: '0.9rem', marginBottom: '4px'}}>Pick Any Color</div>
+                  <input
+                    type="text"
+                    value={customHex}
+                    maxLength={7}
+                    placeholder="#RRGGBB"
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => { setCustomHex(e.target.value); setUseCustomColor(true); }}
+                    style={{
+                      background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.15)',
+                      borderRadius: '6px', color: 'white', padding: '4px 8px',
+                      width: '100px', fontSize: '0.85rem', fontFamily: 'monospace'
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+
             <button 
               className="generate-btn"
               disabled={!uploadedImage || appState === 'analyzing' || appState === 'generating'}

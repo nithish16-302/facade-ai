@@ -27,7 +27,8 @@ def read_root():
 @app.post("/api/v1/generate")
 async def generate_facade(
     image: UploadFile = File(...),
-    palette_id: str = Form(...)
+    palette_id: str = Form(...),
+    hex_color: str = Form(None)
 ):
     """
     Core endpoint that:
@@ -42,7 +43,7 @@ async def generate_facade(
     
     # 2. Vision Engine Logic
     # Get the highly structured JSON prompt from OpenAI
-    vision_logic = await analyze_facade_async(base64_image, palette_id)
+    vision_logic = await analyze_facade_async(base64_image, palette_id, hex_color)
     
     # 3. Apply Replicate SDXL Generative Layer
     prompt = vision_logic.get("image_generation_prompt", "")

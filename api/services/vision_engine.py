@@ -28,7 +28,7 @@ class FacadeAnalysis(BaseModel):
         description="Brief note on the architectural style and any challenges like occlusions."
     )
 
-async def analyze_facade_async(base64_image: str, palette_id: str) -> dict:
+async def analyze_facade_async(base64_image: str, palette_id: str, hex_color: str = None) -> dict:
     """
     Sends the architectural photo to GPT-4o-mini to return the structured generation prompt.
     """
@@ -45,7 +45,20 @@ async def analyze_facade_async(base64_image: str, palette_id: str) -> dict:
         "mughal": "Mughal Marble (Imperial Indo-Islamic): Primary gleaming Makrana white marble facade. Trim inlaid pietra dura floral patterns in lapis and jade. Accents cusped arches with fine chhatri pavilions. Gold and ivory filigree detailing. Architectural photography, golden-hour lighting on white marble.",
     }
     
-    palette_details = palette_map.get(palette_id, palette_map["nordic"])
+    # Handle custom hex color
+    if palette_id == "custom" and hex_color:
+        # Convert hex to RGB for richer prompt context
+        hex_clean = hex_color.lstrip('#')
+        r, g, b = int(hex_clean[0:2], 16), int(hex_clean[2:4], 16), int(hex_clean[4:6], 16)
+        palette_details = (
+            f"Custom User Color: Paint the main exterior walls with the exact color hex {hex_color} "
+            f"(RGB {r}, {g}, {b}). Preserve and match this color precisely. "
+            f"Apply as a smooth matte or satin exterior paint finish. "
+            f"Architectural photography, natural daylight to reveal the true color."
+        )
+    else:
+        palette_details = palette_map.get(palette_id, palette_map["nordic"])
+
     
     system_prompt = f"""
     You are an expert Senior Architectural Prompt Engineer for 'Facade.ai'.

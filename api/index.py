@@ -31,11 +31,12 @@ def read_root():
 @app.post("/api/v1/generate")
 async def generate_facade(
     image: UploadFile = File(...),
-    palette_id: str = Form(...)
+    palette_id: str = Form(...),
+    hex_color: str = Form(None)
 ):
     contents = await image.read()
     base64_image = base64.b64encode(contents).decode('utf-8')
-    vision_logic = await analyze_facade_async(base64_image, palette_id)
+    vision_logic = await analyze_facade_async(base64_image, palette_id, hex_color)
     prompt = vision_logic.get("image_generation_prompt", "")
     print(f"Sending prompt to SDXL: {prompt}")
     generated_image_url = await generate_sdxl_facade_async(base64_image, prompt)
