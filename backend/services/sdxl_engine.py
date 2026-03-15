@@ -98,8 +98,14 @@ async def generate_sdxl_facade_async(base64_img_str: str, generation_prompt: str
                 json=payload
             )
 
+            if pred_resp.status_code == 429:
+                return "Error: Replicate API Rate Limit (429). You likely have another generation in progress. Please wait a minute and try again."
+
             if pred_resp.status_code not in [200, 201]:
                 print(f"ControlNet failed with {pred_resp.status_code}: {pred_resp.text[:200]}")
+                # Don't fallback if it's a structural error (like 401/403/429)
+                if pred_resp.status_code in [401, 403]:
+                    return f"API Auth Error: {pred_resp.status_code}"
                 return await _sdxl_fallback(image_bytes, generation_prompt, auth_headers, client)
 
             prediction = pred_resp.json()
@@ -108,6 +114,12 @@ async def generate_sdxl_facade_async(base64_img_str: str, generation_prompt: str
             print("Polling for ControlNet generation completion...")
             while True:
                 poll_resp = await client.get(get_url, headers=auth_headers)
+                
+                if poll_resp.status_code == 429:
+                    print("  Polling rate limit (429), waiting longer...")
+                    await asyncio.sleep(5)
+                    continue
+
                 poll_resp.raise_for_status()
                 status_data = poll_resp.json()
                 status = status_data["status"]
@@ -125,7 +137,7 @@ async def generate_sdxl_facade_async(base64_img_str: str, generation_prompt: str
                     print(f"ControlNet failed: {error}. Falling back to SDXL img2img...")
                     return await _sdxl_fallback(image_bytes, generation_prompt, auth_headers, client)
 
-                await asyncio.sleep(2)
+                await asyncio.sleep(3)  # Increased to 3s to reduce poll frequency
 
     except Exception as e:
         print(f"Error in generate_sdxl_facade_async: {e}")
@@ -168,6 +180,12 @@ async def _sdxl_fallback(image_bytes: bytes, prompt: str, auth_headers: dict, cl
         poll_url = resp.json()["urls"]["get"]
         while True:
             poll = await client.get(poll_url, headers=auth_headers)
+            
+            if poll.status_code == 429:
+                print("  Fallback polling rate limit (429), waiting longer...")
+                await asyncio.sleep(5)
+                continue
+
             pd = poll.json()
             status = pd.get("status")
             print(f"  Fallback status: {status}")
@@ -177,7 +195,7 @@ async def _sdxl_fallback(image_bytes: bytes, prompt: str, auth_headers: dict, cl
             elif status in ["failed", "canceled"]:
                 print(f"Fallback also failed: {pd.get('error')}")
                 return ""
-            await asyncio.sleep(2)
+            await asyncio.sleep(3)
     except Exception as e:
         print(f"Fallback error: {e}")
         return ""
